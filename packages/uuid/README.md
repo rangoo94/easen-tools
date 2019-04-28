@@ -1,4 +1,4 @@
-# @easen-tools/uuid
+# @easen-tools: UUID v4 generator
 
 Generate fast and cryptographically secure [UUID v4](https://en.wikipedia.org/wiki/Universally_unique_identifier) (RFC-4122 compliant).
 
