@@ -1,8 +1,8 @@
 {
   "name": "@easen-tools/uuid",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Generate fast and cryptographically secure UUID v4",
-  "homepage": "https://github.com/rangoo94/easen-tools/packages/uuid#readme",
+  "homepage": "https://github.com/rangoo94/easen-tools/tree/master/packages/uuid#readme",
   "bugs": "https://github.com/rangoo94/easen-tools/issues",
   "repository": {
     "type": "git",
