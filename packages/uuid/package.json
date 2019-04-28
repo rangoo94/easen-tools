@@ -1,0 +1,37 @@
+{
+  "name": "@easen-tools/uuid",
+  "version": "1.0.0",
+  "description": "Generate fast and cryptographically secure UUID v4",
+  "homepage": "https://github.com/rangoo94/easen-tools/packages/uuid#readme",
+  "bugs": "https://github.com/rangoo94/easen-tools/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rangoo94/easen-tools.git",
+    "directory": "packages/uuid"
+  },
+  "author": "Dawid Rusnak <dawid@drcode.pl>",
+  "keywords": [
+    "easen",
+    "uuid",
+    "uuid4",
+    "id",
+    "v4",
+    "uuidv4",
+    "random"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "files": [
+    "src/**/*"
+  ],
+  "scripts": {
+    "test": "mocha tests/**/*.spec.js"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^6.1.4"
+  },
+  "browser": {
+    "crypto": false
+  }
+}
