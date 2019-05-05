@@ -17,6 +17,10 @@ module.exports = function () {
 
     setup: function (wallaby) {
       wallaby.testFramework.ui('tdd')
+    },
+
+    delays: {
+      run: 200
     }
   }
 }

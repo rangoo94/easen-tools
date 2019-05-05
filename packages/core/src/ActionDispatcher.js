@@ -1,0 +1,541 @@
+const EventEmitter = require('events').EventEmitter
+
+const ActionEvent = require('./constants').ActionEvent
+
+const ServiceActionDispatcherNotReadyError = require('./ServiceError/ServiceActionDispatcherNotReadyError')
+const createSimpleMapAccessFunction = require('./utils/createSimpleMapAccessFunction')
+const createActionExecutor = require('./createActionExecutor')
+
+// Build list of all action event types
+
+const ACTION_EVENT_TYPES = Object.keys(ActionEvent)
+
+// Set-up default options for ActionDispatcher
+
+const defaultOptions = {
+  // Implementations
+  Promise: Promise,
+  buildUuid: require('@easen-tools/uuid').generate,
+  getMicroTime: require('microtime-x'),
+
+  // Switchers
+  ensurePromiseImplementation: true,
+  includeTime: 'all',
+  emitActionEvents: ACTION_EVENT_TYPES
+}
+
+/**
+ * Validate options passed to action dispatcher.
+ *
+ * @param {object} options
+ * @param {function|{ reject: function }} options.Promise
+ * @param {function} options.buildUuid
+ * @param {function} options.getMicroTime
+ * @param {string} [options.includeTime] "all", "start-only", "end-only", "none"
+ * @param {string[]} options.emitActionEvents
+ */
+function validateActionDispatcherOptions (options) {
+  // Validate Promise implementation
+  if (!options.Promise || typeof options.Promise !== 'function' || !options.Promise.reject) {
+    throw new Error('Invalid Promise implementation passed to ActionDispatcher.')
+  }
+
+  // Validate "includeTime" value
+  if ([ 'all', 'none', 'start-only', 'end-only' ].indexOf(options.includeTime) === -1) {
+    throw new Error('Invalid "includeTime" option passed to ActionDispatcher. Expected "all", "none", "start-only" or "end-only"')
+  }
+
+  // Validate UUID generation function
+  if (typeof options.buildUuid !== 'function') {
+    throw new Error('Invalid implementation of UUID generation passed to ActionDispatcher.')
+  }
+
+  // Validate micro-time function
+  if (typeof options.getMicroTime !== 'function') {
+    throw new Error('Invalid implementation of micro-time getter passed to ActionDispatcher.')
+  }
+
+  // Validate action events
+  const eventTypes = options.emitActionEvents
+  if (!Array.isArray(eventTypes) || eventTypes.filter(x => typeof x !== 'string').length > 0) {
+    throw new Error('Invalid list of action events to emit.')
+  }
+}
+
+/**
+ * Normalize options passed to action dispatcher.
+ *
+ * @param {function|{ reject: function }} [options.Promise]
+ * @param {function} [options.getMicroTime]
+ * @param {function|boolean|string} [options.buildUuid] or "none" or false
+ * @param {string} [options.includeTime]  may be "all", "start-only", "end-only", "none"
+ * @param {string[]|string|boolean} [options.emitActionEvents]  may be "none" (false) or "all" (true)
+ * @param {boolean} [options.ensurePromiseImplementation]
+ * @returns {object}
+ */
+function normalizeActionDispatcherOptions (options) {
+  // Make sure that it's boolean
+  options.ensurePromiseImplementation = !!options.ensurePromiseImplementation
+
+  // Build proper list of passed events
+  if (options.emitActionEvents === true || options.emitActionEvents === 'all') {
+    options.emitActionEvents = ACTION_EVENT_TYPES.slice()
+  } else if (options.emitActionEvents === false || options.emitActionEvents === 'none') {
+    options.emitActionEvents = []
+  }
+
+  // Allow "none" for buildUuid
+  if (options.buildUuid === 'none') {
+    options.buildUuid = false
+  }
+
+  // Make unique list of passed events
+  if (Array.isArray(options.emitActionEvents)) {
+    options.emitActionEvents = options.emitActionEvents.filter((x, i, arr) => arr.indexOf(x) === i)
+  }
+
+  // Replace empty functions
+  options.getMicroTime = options.getMicroTime || (() => null)
+  options.buildUuid = options.buildUuid || (() => null)
+
+  return options
+}
+
+/**
+ * Fired after action is requested.
+ *
+ * @event ActionDispatcher#event:action-created
+ * @param {object} actionContext
+ */
+
+/**
+ * Fired when action is unknown.
+ *
+ * @event ActionDispatcher#event:action-unknown
+ * @param {object} actionContext
+ */
+
+/**
+ * Fired after action is initially processed.
+ *
+ * @event ActionDispatcher#event:action-ready
+ * @param {object} actionContext
+ * @param {object} initialActionContext
+ */
+
+/**
+ * Fired when prepared action is about to be executed.
+ *
+ * @event ActionDispatcher#event:action-execution
+ * @param {object} actionContext
+ * @param {*} error
+ * @param {object} initialActionContext
+ */
+
+/**
+ * Fired after action has been finished successfully.
+ *
+ * @event ActionDispatcher#event:action-success
+ * @param {object} actionContext
+ * @param {*} result
+ * @param {object} initialActionContext
+ */
+
+/**
+ * Fired after action has failed (and it's not unknown).
+ *
+ * @event ActionDispatcher#event:action-error
+ * @param {object} actionContext
+ * @param {*} error
+ * @param {object} initialActionContext
+ * @see ActionDispatcher#event:action-unknown
+ */
+
+/**
+ * Abstract class, which gives nice interface for dispatching actions,
+ * even in multiple steps.
+ *
+ * @class
+ * @abstract
+ */
+class ActionDispatcher extends EventEmitter {
+  /**
+   * @param {object} [options]
+   * @param {function|{ reject: function }} [options.Promise]
+   * @param {function|boolean|string} [options.buildUuid]  or false or "none"
+   * @param {boolean} [options.ensurePromiseImplementation]
+   * @param {function} [options.getMicroTime]
+   * @param {string} [options.includeTime] may be "all", "start-only", "end-only" or "none"
+   * @param {string[]|boolean|string} [options.emitActionEvents] may be "none" (false) or "all" (true)
+   */
+  constructor (options) {
+    // Attach EventEmitter
+    super()
+
+    // Build options
+    this.options = Object.assign({}, defaultOptions, options)
+
+    // Normalize options
+    this.options = normalizeActionDispatcherOptions(this.options)
+
+    // Validate them
+    validateActionDispatcherOptions(this.options)
+
+    // Retrieve data for computation
+    const getMicroTime = this.options.getMicroTime
+    const includeTime = this.options.includeTime
+
+    // Extract important options
+    this.$Promise = this.options.Promise
+    this.$includeStartTime = includeTime === 'all' || includeTime === 'start-only'
+    this.$includeEndTime = includeTime === 'all' || includeTime === 'end-only'
+    this.$getStartTime = this.$includeStartTime ? getMicroTime : () => null
+    this.$getEndTime = this.$includeEndTime ? getMicroTime : () => null
+    this.$buildUuid = this.options.buildUuid
+  }
+
+  /**
+   * Check if action dispatcher is available for call.
+   *
+   * @returns {boolean}
+   */
+  isReady () {
+    return true
+  }
+
+  /**
+   * Check if action dispatcher is healthy.
+   *
+   * @returns {boolean}
+   */
+  isHealthy () {
+    return this.isReady()
+  }
+
+  /**
+   * Get list of actions, which may be dispatched.
+   *
+   * @returns {string[]}
+   * @abstract
+   */
+  getActionsList () {
+    throw new Error('You should implement getActionsList() method for ActionDispatcher.')
+  }
+
+  /**
+   * Prepare action context based on input data.
+   *
+   * @param {string} name
+   * @param {object} params
+   * @param {object} metaData
+   * @returns {object}
+   * @private
+   */
+  _createActionContext (name, params, metaData) {
+    // Get start time of action
+    const startTime = this.$getStartTime()
+
+    // Build action context
+    return {
+      Promise: this.$Promise,
+      startTime: startTime,
+      endTime: null,
+      uuid: metaData.uuid || this.$buildUuid(),
+      parentUuid: metaData.parentUuid || null,
+      name: name,
+      params: params,
+      metaData: metaData
+    }
+  }
+
+  /**
+   * Check if action with selected name can be called.
+   *
+   * @param {string} name
+   * @returns {boolean}
+   * @abstract
+   */
+  hasActionCaller (name) {
+    throw new Error('You should implement hasActionCaller() method for ActionDispatcher.')
+  }
+
+  /**
+   * Initially process action.
+   *
+   * In example, it may include:
+   * - injecting dependencies
+   * - adding meta-data to action context
+   *
+   * @param {object} actionContext
+   * @returns {Promise|void}
+   * @private
+   */
+  _processAction (actionContext) {}
+
+  /**
+   * Prepare action for execution.
+   *
+   * In example, it may include:
+   * - authentication & authorization
+   * - anything, what is not strictly connected to action execution
+   *
+   * @param {object} actionContext
+   * @returns {Promise|void}
+   * @async if needed
+   * @private
+   */
+  _preExecuteAction (actionContext) {}
+
+  /**
+   * Finally, execute already prepared action.
+   *
+   * On this layer the proper action may be executed,
+   * including cache layer (as whole negotiation was already done).
+   *
+   * @param {object} actionContext
+   * @returns {*|Promise<*,*>}
+   * @async if needed
+   * @abstract
+   * @private
+   */
+  _executeAction (actionContext) {
+    throw new Error('You should implement _executeAction() method for ActionDispatcher.')
+  }
+
+  /**
+   * Process or modify successful result before returning it.
+   *
+   * @param {object} result
+   * @param {object} actionContext
+   * @returns {*}
+   * @async if needed
+   * @private
+   */
+  _processResult (result, actionContext) {
+    return result
+  }
+
+  /**
+   * Finalize action context, after it's fully executed.
+   *
+   * @param {object} actionContext
+   * @private
+   */
+  _finalizeContext (actionContext) {
+    actionContext.endTime = this.$getEndTime()
+  }
+
+  /**
+   * Do something after action is requested (after `_createActionContext`).
+   * It's intended for side effects.
+   *
+   * @param {object} actionContext
+   * @see _createActionContext
+   * @see call
+   * @private
+   */
+  _onActionCreated (actionContext) {}
+
+  /**
+   * Do something after action is requested, but name is not recognized.
+   * It will be fired after _onActionRequest.
+   * It's intended for side effects.
+   *
+   * @param {object} actionContext
+   * @see _createActionContext
+   * @see hasActionCaller
+   * @see call
+   * @private
+   */
+  _onActionUnknown (actionContext) {}
+
+  /**
+   * Do something after action is already processed.
+   * It's intended for side effects.
+   *
+   * @param {object} actionContext
+   * @see _processAction
+   * @see call
+   * @private
+   */
+  _onActionReady (actionContext) {}
+
+  /**
+   * Do something after action is just about to be executed.
+   * It's intended for side effects.
+   *
+   * @param {object} actionContext
+   * @see _preExecuteAction
+   * @see call
+   * @private
+   */
+  _onActionExecution (actionContext) {}
+
+  /**
+   * Do something after action has been successfully executed.
+   * It's intended for side effects.
+   *
+   * @param {object} actionContext
+   * @param {*} result
+   * @see _executeAction
+   * @see call
+   * @private
+   */
+  _onActionSuccess (actionContext, result) {}
+
+  /**
+   * Do something after action has failed (and it's not unknown action).
+   * It's intended for side effects.
+   *
+   * @param {object} actionContext
+   * @param {*} error
+   * @see _executeAction
+   * @see _onActionUnknown
+   * @see call
+   * @private
+   */
+  _onActionError (actionContext, error) {}
+
+  /**
+   * Dispatch action, going through whole flow of data.
+   *
+   * @param {string} name
+   * @param {object} [params]
+   * @param {object} [metaData]
+   * @returns {Promise<*,*>|{ context: object }}
+   * @fires ActionDispatcher#event:action-created
+   * @fires ActionDispatcher#event:action-unknown
+   * @fires ActionDispatcher#event:action-ready
+   * @fires ActionDispatcher#event:action-execution
+   * @fires ActionDispatcher#event:action-success
+   * @fires ActionDispatcher#event:action-error
+   * @final
+   */
+  call (name, params, metaData) {
+    try {
+      // Check if action dispatcher is ready
+      if (!this.isReady()) {
+        return this.$Promise.reject(new ServiceActionDispatcherNotReadyError('ActionDispatcher is not ready yet.'))
+      }
+    } catch (error) {
+      // Throw back error
+      return this.$Promise.reject(error)
+    }
+
+    // Set up parameters
+    if (params == null) {
+      params = {}
+    }
+
+    // Set up meta-data
+    if (typeof metaData !== 'object') {
+      metaData = {}
+    }
+
+    // Execute action internally
+    return this.$getExecutor()(name, params, metaData)
+  }
+
+  /**
+   * Get internal action executor instance.
+   *
+   * @returns {(function(string, object, object): Promise<*, *>)|{ context: object }}
+   * @private
+   */
+  $getExecutor () {
+    // Initialize executor if it's not available yet
+    if (!this.$executor) {
+      return this.$initializeExecutor()
+    }
+
+    return this.$executor
+  }
+
+  /**
+   * Initialize internal action executor.
+   *
+   * @returns {(function(string, object, object): Promise<*, *>)|{ context: object }}
+   * @private
+   */
+  $initializeExecutor () {
+    return this.$executor = createActionExecutor({
+      Promise: this.$Promise,
+      ensurePromiseImplementation: this.options.ensurePromiseImplementation,
+      includeContext: false, // TODO: Hmm...
+      isActionSupported: this.hasActionCaller.bind(this),
+      createContext: this._createActionContext.bind(this),
+      process: this._processAction.noop ? null : this._processAction.bind(this),
+      preExecute: this._preExecuteAction.noop ? null : this._preExecuteAction.bind(this),
+      execute: this._executeAction.bind(this),
+      processResult: this._processResult.noop ? null : this._processResult.bind(this),
+      finalizeContext: this._finalizeContext.bind(this),
+      onActionStateChange: this.$createOnActionStateChangeHandler()
+    })
+  }
+
+  /**
+   * Create handler for action state change in internal action executor.
+   *
+   * @returns {function(string, object, [*])}
+   * @private
+   */
+  $createOnActionStateChangeHandler () {
+    // Create map of simple handlers
+    const eventHandlers = {
+      created: this._onActionCreated.noop ? null : this._onActionCreated.bind(this),
+      unknown: this._onActionUnknown.noop ? null : this._onActionUnknown.bind(this),
+      ready: this._onActionReady.noop ? null : this._onActionReady.bind(this),
+      execution: this._onActionExecution.noop ? null : this._onActionExecution.bind(this),
+      success: this._onActionSuccess.noop ? null : this._onActionSuccess.bind(this),
+      error: this._onActionError.noop ? null : this._onActionError.bind(this)
+    }
+
+    // Get action events which may be emitted
+    const emittedEvents = this.options.emitActionEvents
+
+    // Override event handler for actions which should be emitted
+    for (let i = 0; i < emittedEvents.length; i++) {
+      const eventType = emittedEvents[i]
+
+      if (eventHandlers[eventType]) {
+        // Create new handler, which will call handler and emit event
+        eventHandlers[eventType] = new Function('$a', '$h', `return function handleEvent (context, value) {
+          $h(context, value);
+          $a.emit(${JSON.stringify(ActionEvent[eventType])}, context, value);
+        }`)(this, eventHandlers[eventType])
+      } else {
+        // Create new handler, which will emit event
+        eventHandlers[eventType] = new Function('$a', `return function handleEvent (context, value) {
+          $a.emit(${JSON.stringify(ActionEvent[eventType])}, context, value);
+        }`)(this)
+      }
+    }
+
+    for (let key in eventHandlers) {
+      if (!eventHandlers[key]) {
+        delete eventHandlers[key]
+      }
+    }
+
+    if (Object.keys(eventHandlers).length === 0) {
+      return null
+    }
+
+    return createSimpleMapAccessFunction(eventHandlers, 3, 1)
+  }
+}
+
+// Mark all event emitting functions as noop,
+// so they will be ignored when they will be not overridden
+ActionDispatcher.prototype._onActionCreated.noop = true
+ActionDispatcher.prototype._onActionUnknown.noop = true
+ActionDispatcher.prototype._onActionReady.noop = true
+ActionDispatcher.prototype._onActionExecution.noop = true
+ActionDispatcher.prototype._onActionSuccess.noop = true
+ActionDispatcher.prototype._onActionError.noop = true
+
+ActionDispatcher.prototype._processAction.noop = true
+ActionDispatcher.prototype._preExecuteAction.noop = true
+ActionDispatcher.prototype._processResult.noop = true
+
+module.exports = ActionDispatcher
