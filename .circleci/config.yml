@@ -12,7 +12,7 @@ jobs:
       - checkout
 
       - run:
-          name: Setup Code Climate test-reporter
+          name: Setup CodeClimate test-reporter
           command: |
             curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
             chmod +x ./cc-test-reporter
@@ -24,11 +24,11 @@ jobs:
             - v1-node-{{ arch }}-
 
       - run:
-          name: Nodejs Version
+          name: Node.js version
           command: node --version
 
       - run:
-          name: Install Packages
+          name: Install dependencies
           command: npm run install-all --no-save
 
       - save_cache:
@@ -39,7 +39,7 @@ jobs:
             - packages/*/node_modules
 
       - run:
-          name: Test Packages
+          name: Test
           command: |
             # Notify CodeClimate test reporter
             ./cc-test-reporter before-build
@@ -49,3 +49,7 @@ jobs:
 
             # Send coverage data
             ./cc-test-reporter after-build --coverage-input-type clover --exit-code $?
+
+      - run:
+          name: Run code linter
+          command: npm run lint

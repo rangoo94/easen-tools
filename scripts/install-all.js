@@ -33,8 +33,7 @@ function writeConsole (stream, banner, data) {
   stream.write(
     data.toString()
       .replace(/\n*$/, '')
-      .replace(/\n/g, '\n' + banner)
-    + '\n'
+      .replace(/\n/g, '\n' + banner) + '\n'
   )
 }
 
@@ -66,9 +65,9 @@ function installPackage (name) {
   return new Promise((resolve, reject) => {
     child.on('close', code => {
       if (code === 0) {
-        resolve()
+        resolve(code)
       } else {
-        reject()
+        reject(code)
       }
     })
   })
@@ -79,4 +78,4 @@ const promises = installablePackageNames.map(installPackage)
 
 // Handle errors
 Promise.all(promises)
-  .catch(() => process.exit(1))
+  .catch(code => process.exit(typeof code === 'number' ? code : 1))
