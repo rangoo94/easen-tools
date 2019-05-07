@@ -9,7 +9,7 @@
     "url": "https://github.com/rangoo94/easen-tools.git"
   },
   "scripts": {
-    "install-all": "node scripts/install-all.js",
+    "install-all": "npm install && node scripts/install-all.js",
     "test": "nyc --reporter clover --reporter text mocha packages/*/tests/**/*.spec.js"
   },
   "author": "Dawid Rusnak <dawid@drcode.pl>",
