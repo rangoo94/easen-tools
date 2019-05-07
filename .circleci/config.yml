@@ -1,0 +1,47 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/node:11
+
+    steps:
+      - checkout
+
+      - run:
+          name: Setup Code Climate test-reporter
+          command: |
+            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+            chmod +x ./cc-test-reporter
+
+      - restore_cache:
+          name: Restore node_modules cache
+          keys:
+            - v1-node-{{ arch }}-{{ .Branch }}
+            - v1-node-{{ arch }}-
+
+      - run:
+          name: Nodejs Version
+          command: node --version
+
+      - run:
+          name: Install Packages
+          command: npm run install-all --no-save
+
+      - save_cache:
+          name: Save node_modules cache
+          key: v1-node-{{ arch }}-{{ .Branch }}
+          paths:
+            - node_modules
+            - packages/*/node_modules
+
+      - run:
+          name: Test Packages
+          command: |
+            # Notify CodeClimate test reporter
+            ./cc-test-reporter before-build
+
+            # Run tests
+            npm test
+
+            # Send coverage data
+            ./cc-test-reporter after-build --coverage-input-type clover --exit-code $?

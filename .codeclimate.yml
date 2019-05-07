@@ -1,0 +1,12 @@
+general:
+  artifacts:
+    - "./coverage"
+ratings:
+  paths:
+    - "packages/*/src/**/*.js"
+    - "packages/*/*.js"
+exclude_paths:
+  - "packages/uuid/benchmark/"
+  - "packages/*/tests/"
+  - "coverage"
+

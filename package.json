@@ -1,0 +1,21 @@
+{
+  "name": "easen-tools",
+  "version": "0.0.0",
+  "description": "(micro)services toolkit for Node.js",
+  "homepage": "https://github.com/rangoo94/easen-tools#readme",
+  "bugs": "https://github.com/rangoo94/easen-tools/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rangoo94/easen-tools.git"
+  },
+  "scripts": {
+    "install-all": "node scripts/install-all.js",
+    "test": "nyc --reporter clover --reporter text mocha packages/*/tests/**/*.spec.js"
+  },
+  "author": "Dawid Rusnak <dawid@drcode.pl>",
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "^6.1.4",
+    "nyc": "^14.1.0"
+  }
+}
