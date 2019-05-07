@@ -195,7 +195,6 @@ describe('core', () => {
       const isActionSupported = name => name === 'allowedName'
       const createContext = (name, params) => ({ name: name, params: params })
 
-
       const fn = createActionExecutor({
         isActionSupported: isActionSupported,
         createContext: createContext,
@@ -248,7 +247,7 @@ describe('core', () => {
         { state: ActionStatus.CREATED, context: context, value: undefined },
         { state: ActionStatus.READY, context: context, value: undefined },
         { state: ActionStatus.EXECUTION, context: context, value: undefined },
-        { state: ActionStatus.SUCCESS, context: context, value: 30 },
+        { state: ActionStatus.SUCCESS, context: context, value: 30 }
       ])
     })
 
@@ -598,7 +597,6 @@ describe('core', () => {
       await promise.catch(() => {})
       expect(promise.context).to.equal(undefined)
     })
-
 
     it('should ignore uncaught error (within emitting events)', async () => {
       const context = { a: 10, b: 20 }

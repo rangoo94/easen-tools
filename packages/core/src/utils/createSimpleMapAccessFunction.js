@@ -19,7 +19,6 @@ function createSimpleMapAccessFunction (map, argumentsCount = 1, omittedArgument
   const passedArgs = argsList.slice(omittedArgumentsCount)
   const passedCode = passedArgs.join(',')
 
-
   // Build if/else code for all values
   let code = keys.map((name, index) => `
     ${index === 0 ? '' : 'else '}if ($0 === ${JSON.stringify(name)}) {

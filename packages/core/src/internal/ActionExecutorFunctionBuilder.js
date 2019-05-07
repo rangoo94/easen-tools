@@ -30,8 +30,8 @@ class ActionExecutorFunctionBuilder extends FunctionBuilder {
       .finish(
         callback
           ? errorHandler
-          ? `${returnValue}.then(${callback}).catch(${errorHandler})`
-          : `${returnValue}.then(${callback})`
+            ? `${returnValue}.then(${callback}).catch(${errorHandler})`
+            : `${returnValue}.then(${callback})`
           : returnValue
       )
       .close()

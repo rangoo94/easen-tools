@@ -486,6 +486,7 @@ class ActionDispatcher extends EventEmitter {
    * @private
    */
   $initializeExecutor () {
+    // eslint-disable-next-line
     return this.$executor = createActionExecutor({
       Promise: this.$Promise,
       ensurePromiseImplementation: this.options.ensurePromiseImplementation,
@@ -537,8 +538,8 @@ class ActionDispatcher extends EventEmitter {
 
       // Create/replace handler which will emit event and call default one
       eventHandlers[eventType] = prevHandler
-        ? new Function('$a', '$h', fnCode)(this, prevHandler)
-        : new Function('$a', fnCode)(this)
+        ? new Function('$a', '$h', fnCode)(this, prevHandler) // eslint-disable-line no-new-func
+        : new Function('$a', fnCode)(this) // eslint-disable-line no-new-func
     }
 
     // Check number of existing event handlers

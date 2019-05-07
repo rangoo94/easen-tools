@@ -11,7 +11,7 @@ const variants = glob.sync(path.join(__dirname, 'cases/*.js'))
 // Register all test cases
 for (const variant of variants) {
   // Retrieve test name
-  const name = variant.match(/[\/\\]([^\/\\]+)\.js/)[1]
+  const name = variant.match(/[/\\]([^/\\]+)\.js/)[1]
 
   // Register test
   suite.add(name, require(variant))

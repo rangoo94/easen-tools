@@ -131,6 +131,7 @@ function createActionExecutor (options) {
   const fnHandleError = fnAbstract.clone()
     .setArguments('$ctx', '$error')
 
+    /* eslint-disable indent */
     // Handle ImmediateResult
     .conditional('$error && $error.$immediateResult')
     .open()
@@ -144,6 +145,7 @@ function createActionExecutor (options) {
 
       .finish('$v')
     .close()
+    /* eslint-enable indent */
 
     // Handle real error
     .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx', 'undefined', '$error' ])
@@ -176,7 +178,6 @@ function createActionExecutor (options) {
     .setContext('$exCb', fnExecuteCallback.build())
 
     // Pre-execute callback
-
     // Emit "execution" event
     .callAvailable(null, InternalFnNames.emit, [ '"execution"', '$ctx' ])
 
@@ -205,7 +206,6 @@ function createActionExecutor (options) {
     .setContext('$preCb', fnPreExecuteCallback.build())
 
     // Processing callback
-
     // Emit "ready" event
     .callAvailable(null, InternalFnNames.emit, [ '"ready"', '$ctx' ])
 
@@ -217,7 +217,6 @@ function createActionExecutor (options) {
     )
 
     // Pre-execute callback
-
     // Emit "execution" event
     .callAvailable(null, InternalFnNames.emit, [ '"execution"', '$ctx' ])
 
@@ -276,7 +275,6 @@ function createActionExecutor (options) {
     )
 
     // Processing callback
-
     // Emit "ready" event
     .callAvailable(null, InternalFnNames.emit, [ '"ready"', '$ctx' ])
 
@@ -293,7 +291,6 @@ function createActionExecutor (options) {
     )
 
     // Pre-execute callback
-
     // Emit "execution" event
     .callAvailable(null, InternalFnNames.emit, [ '"execution"', '$ctx' ])
 
@@ -333,6 +330,7 @@ function createActionExecutor (options) {
 
     .whenAvailable(InternalFnNames.isActionSupported, x => x
       .conditional(`!${InternalFnNames.isActionSupported}(name)`)
+      /* eslint-disable indent */
       .open()
         .declare('$errorUnknown', 'Promise.reject(new ServiceActionNotFoundError())')
         .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx', 'undefined', '$errorUnknown' ])
@@ -346,6 +344,7 @@ function createActionExecutor (options) {
           x => x.finish('$errorUnknown')
         )
       .close()
+      /* eslint-enable indent */
     )
     .when(
       includeContext,

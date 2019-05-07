@@ -6,6 +6,7 @@
 function getCryptoInstance () {
   // Check for Crypto available in global context
   if (typeof crypto !== 'undefined') {
+    // eslint-disable-next-line
     return crypto
   }
 

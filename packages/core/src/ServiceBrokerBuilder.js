@@ -146,7 +146,7 @@ class ServiceBrokerBuilder {
    * @returns {ServiceBrokerBuilder|this}
    * @chainable
    */
-  registerProcessingMiddleware (pattern, handler, annotations) {
+  registerProcessingMiddleware (pattern, handler, annotations) { // eslint-disable-line
     return this._registerMiddleware('processing', pattern, handler, annotations)
   }
 
@@ -159,7 +159,7 @@ class ServiceBrokerBuilder {
    * @returns {ServiceBrokerBuilder|this}
    * @chainable
    */
-  registerNegotiatingMiddleware (pattern, handler, annotations) {
+  registerNegotiatingMiddleware (pattern, handler, annotations) { // eslint-disable-line
     return this._registerMiddleware('negotiating', pattern, handler, annotations)
   }
 
@@ -172,7 +172,7 @@ class ServiceBrokerBuilder {
    * @returns {ServiceBrokerBuilder|this}
    * @chainable
    */
-  registerExecutionMiddleware (pattern, handler, annotations) {
+  registerExecutionMiddleware (pattern, handler, annotations) { // eslint-disable-line
     return this._registerMiddleware('execution', pattern, handler, annotations)
   }
 
@@ -233,7 +233,7 @@ class ServiceBrokerBuilder {
    * @returns {ServiceBrokerBuilder|this}
    * @chainable
    */
-  registerClient (namespace, client) {
+  registerClient (namespace, client) { // eslint-disable-line
     // Allow syntax without namespace
     if (!client && namespace && typeof namespace === 'object') {
       client = namespace

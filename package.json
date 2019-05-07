@@ -11,7 +11,7 @@
   "scripts": {
     "install-all": "npm install && node scripts/install-all.js",
     "test": "nyc mocha ./packages/*/tests/{**,}/*.spec.js",
-    "lint": "eslint **/*.js"
+    "lint": "eslint . --ignore-pattern=**/node_modules"
   },
   "author": "Dawid Rusnak <dawid@drcode.pl>",
   "license": "MIT",

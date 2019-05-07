@@ -164,7 +164,7 @@ class ServiceBroker extends ActionDispatcher {
    * @param {ActionDispatcher} client
    * @returns {ServiceBroker}
    */
-  registerClient (namespace, client) {
+  registerClient (namespace, client) { // eslint-disable-line
     // Allow syntax without namespace
     if (!client && namespace && typeof namespace === 'object') {
       client = namespace

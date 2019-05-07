@@ -632,7 +632,7 @@ describe('core', () => {
         expect(result.executed).to.equal(true)
       })
 
-      it('should process result using _processResult method', async() => {
+      it('should process result using _processResult method', async () => {
         class EchoActionDispatcherWithProcessedResult extends EchoActionDispatcher {
           _processResult (result) {
             return {
