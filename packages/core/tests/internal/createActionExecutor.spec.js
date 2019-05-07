@@ -535,6 +535,7 @@ describe('core', () => {
       })
 
       const promise = fn('bla')
+      promise.catch(() => {})
 
       expect(promise.context).to.equal(context)
       await promise.catch(() => {})
@@ -554,6 +555,7 @@ describe('core', () => {
       })
 
       const promise = fn('bla')
+      promise.catch(() => {})
 
       expect(promise.context).to.equal(undefined)
       await promise.catch(() => {})
@@ -571,6 +573,7 @@ describe('core', () => {
       })
 
       const promise = fn('bla')
+      promise.catch(() => {})
 
       expect(promise.context).to.equal(context)
       await promise.catch(() => {})
@@ -589,6 +592,7 @@ describe('core', () => {
       })
 
       const promise = fn('bla')
+      promise.catch(() => {})
 
       expect(promise.context).to.equal(undefined)
       await promise.catch(() => {})

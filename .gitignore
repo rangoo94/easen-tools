@@ -15,9 +15,10 @@ Thumbs.db
 node_modules
 npm-debug.log
 .cache-loader
+.nyc_output
 
 # IDEs stuff
 .idea
 
 # Temporary files
-coverage/
+build/logs/
