@@ -1,9 +1,35 @@
 const ActionDispatcher = require('./ActionDispatcher')
 const deepCloneValue = require('./utils/deepCloneValue')
 
+// Set-up default options for local client
+
 const defaultOptions = {
   deepCloneValue: deepCloneValue,
-  passUuidDown: false
+  passUuidDown: false,
+  passMetaDataDown: true
+}
+
+// Set-up helper functions
+
+/**
+ * Normalize local client.
+ *
+ * @param {object} options
+ * @param {function} [options.deepCloneValue]
+ * @param {boolean} [options.passUuidDown]
+ * @param {boolean} [options.passMetaDataDown]
+ */
+function normalizeServiceBrokerLocalClientOptions (options) {
+  // Ensure that deep-clone function exists
+  if (!options.deepCloneValue) {
+    options.deepCloneValue = x => x
+  }
+
+  // Cast 'passUuidDown' option to boolean
+  options.passUuidDown = !!options.passUuidDown
+
+  // Cast 'passMetaDataDown' option to boolean
+  options.passMetaDataDown = !!options.passMetaDataDown
 }
 
 /**
@@ -16,6 +42,7 @@ class ServiceBrokerLocalClient extends ActionDispatcher {
    * @param {ServiceBroker} broker
    * @param {object} [options]
    * @param {boolean} [options.passUuidDown]
+   * @param {boolean} [options.passMetaDataDown]
    * @param {boolean} [options.emitEvents]
    * @param {boolean} [options.includeEndTime]
    * @param {boolean} [options.includeEndTimeForUnknownAction]
@@ -28,6 +55,9 @@ class ServiceBrokerLocalClient extends ActionDispatcher {
     // Initialize options
     options = Object.assign({}, defaultOptions, options)
 
+    // Normalize options
+    normalizeServiceBrokerLocalClientOptions(options)
+
     // Call ActionDispatcher constructor
     super(options)
 
@@ -35,8 +65,9 @@ class ServiceBrokerLocalClient extends ActionDispatcher {
     this.broker = broker
 
     // Extract options
-    this._deepCloneValue = options.deepCloneValue || (x => x)
-    this._passUuidDown = !!options.passUuidDown
+    this.$deepCloneValue = options.deepCloneValue
+    this.$passUuidDown = options.passUuidDown
+    this.$passMetaDataDown = options.passMetaDataDown
   }
 
   /**
@@ -67,13 +98,13 @@ class ServiceBrokerLocalClient extends ActionDispatcher {
    */
   _executeAction (actionContext) {
     // Build params
-    const params = this._deepCloneValue(actionContext.params || {})
+    const params = this.$deepCloneValue(actionContext.params || {})
 
     // Create object for additional meta data
     const additionalMetaData = {}
 
     // Decide how to pass UUID in meta data
-    if (this._passUuidDown) {
+    if (this.$passUuidDown) {
       additionalMetaData.uuid = actionContext.uuid
       additionalMetaData.parentUuid = actionContext.parentUuid
     } else {
@@ -81,7 +112,9 @@ class ServiceBrokerLocalClient extends ActionDispatcher {
     }
 
     // Build final metadata
-    const metaData = Object.assign({}, actionContext.metaData, additionalMetaData)
+    const metaData = this.$passMetaDataDown
+      ? Object.assign({}, actionContext.metaData, additionalMetaData)
+      : Object.assign({}, additionalMetaData)
 
     // Create request to service broker
     return this.broker.call(actionContext.name, params, metaData)

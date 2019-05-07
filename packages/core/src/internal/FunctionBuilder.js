@@ -191,20 +191,6 @@ class FunctionBuilder {
   }
 
   /**
-   * Add arguments which will be required in this function.
-   *
-   * @param {string} name1
-   * @param {string} [...names]
-   * @returns {FunctionBuilder|this}
-   * @chainable
-   */
-  addArguments (/* ...names */) {
-    this._args.push.apply(this._args, arguments)
-
-    return this
-  }
-
-  /**
    * Set arguments which will be required in this function.
    *
    * @param {string} name1
@@ -234,20 +220,15 @@ class FunctionBuilder {
    * @param {boolean} [clean]  should it remove unnecessary spaces? may be little buggy.
    * @returns {string}
    */
-  buildCode (clean) {
+  buildCode () {
     // Retrieve code
     const executionCode = this._code.replace(/^;*\s*/, '')
     const errorHandlerCode = (this._errorHandlerCode || '').replace(/^;*\s*/, '')
 
     // Attach try/catch construction if it's expected
-    const _code = errorHandlerCode.length
+    const code = errorHandlerCode.length
       ? `try { ${executionCode} } catch ($error) { ${errorHandlerCode} }`
       : executionCode
-
-    // Clean code from unnecessary spaces, if it's expected
-    const code = clean
-      ? _code.replace(/\s+/g, ' ')
-      : _code
 
     // Build function definition
     const definition = `return function ${this._name} (${this._args.join(', ')})`
@@ -259,12 +240,11 @@ class FunctionBuilder {
   /**
    * Build a function instance based on definition.
    *
-   * @param {boolean} [clean]  should it remove unnecessary spaces? may be little buggy.
    * @returns {function}
    */
-  build (clean) {
+  build () {
     // Build function factory code
-    const code = this.buildCode(clean)
+    const code = this.buildCode()
 
     // Retrieve context data, remove variables which are definitely not used
     const contextNames = Object.keys(this._context).filter(name => code.indexOf(name) !== -1)

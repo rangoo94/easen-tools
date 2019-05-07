@@ -76,7 +76,7 @@ class ServiceBrokerClientAggregator extends ActionDispatcher {
   /**
    * Register new client inside.
    *
-   * @param {string} namespace
+   * @param {string|null} namespace
    * @param {ActionDispatcher} client
    * @returns {ServiceBrokerClientAggregator}
    */

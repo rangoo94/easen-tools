@@ -15,7 +15,7 @@ class ServiceBrokerBuilder {
    * @param {function|{ reject: function }} [options.Promise]
    * @param {function|boolean|string} [options.buildUuid]  or false or "none"
    * @param {function} [options.getMicroTime]
-   * @param {string} [options.includeTime] may be "all", "start-only", "end-only" or "none"
+   * @param {string} [options.trackTime] may be "all", "start-only", "end-only" or "none"
    * @param {boolean} [options.includeEndTimeForUnknownAction]
    * @param {boolean} [options.ensurePromiseImplementation]
    * @param {string[]|boolean|string} [options.emitActionEvents] may be "none" (false) or "all" (true)

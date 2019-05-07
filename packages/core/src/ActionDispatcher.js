@@ -1,27 +1,40 @@
 const EventEmitter = require('events').EventEmitter
 
-const ActionEvent = require('./constants').ActionEvent
+const { ActionStatus, ActionEventByStatus } = require('./constants')
+const defaults = require('./defaults')
 
+const createActionExecutor = require('./internal/createActionExecutor')
 const ServiceActionDispatcherNotReadyError = require('./ServiceError/ServiceActionDispatcherNotReadyError')
 const createSimpleMapAccessFunction = require('./utils/createSimpleMapAccessFunction')
-const createActionExecutor = require('./createActionExecutor')
+const dummyFunctions = require('./utils/dummyFunctions')
 
 // Build list of all action event types
 
-const ACTION_EVENT_TYPES = Object.keys(ActionEvent)
+const ACTION_EVENT_TYPES = Object.keys(ActionEventByStatus)
 
 // Set-up default options for ActionDispatcher
 
 const defaultOptions = {
   // Implementations
-  Promise: Promise,
-  buildUuid: require('@easen-tools/uuid').generate,
-  getMicroTime: require('microtime-x'),
+  Promise: defaults.Promise,
+  buildUuid: defaults.buildUuid, // TODO: UUID validation function? for parent UUIDs.
+  getMicroTime: defaults.getMicroTime,
 
   // Switchers
   ensurePromiseImplementation: true,
-  includeTime: 'all',
+  trackTime: 'all',
   emitActionEvents: ACTION_EVENT_TYPES
+}
+
+// Create mapping for action events with default handlers
+
+const eventHandlingMethods = {
+  [ActionStatus.CREATED]: '_onActionCreated',
+  [ActionStatus.UNKNOWN]: '_onActionUnknown',
+  [ActionStatus.READY]: '_onActionReady',
+  [ActionStatus.EXECUTION]: '_onActionExecution',
+  [ActionStatus.SUCCESS]: '_onActionSuccess',
+  [ActionStatus.ERROR]: '_onActionError'
 }
 
 /**
@@ -31,18 +44,18 @@ const defaultOptions = {
  * @param {function|{ reject: function }} options.Promise
  * @param {function} options.buildUuid
  * @param {function} options.getMicroTime
- * @param {string} [options.includeTime] "all", "start-only", "end-only", "none"
+ * @param {string} [options.trackTime] "all", "start-only", "end-only", "none"
  * @param {string[]} options.emitActionEvents
  */
 function validateActionDispatcherOptions (options) {
   // Validate Promise implementation
-  if (!options.Promise || typeof options.Promise !== 'function' || !options.Promise.reject) {
+  if (!options.Promise || typeof options.Promise !== 'function' || !options.Promise.reject || !options.Promise.resolve) {
     throw new Error('Invalid Promise implementation passed to ActionDispatcher.')
   }
 
-  // Validate "includeTime" value
-  if ([ 'all', 'none', 'start-only', 'end-only' ].indexOf(options.includeTime) === -1) {
-    throw new Error('Invalid "includeTime" option passed to ActionDispatcher. Expected "all", "none", "start-only" or "end-only"')
+  // Validate "trackTime" value
+  if ([ 'all', 'none', 'start-only', 'end-only' ].indexOf(options.trackTime) === -1) {
+    throw new Error('Invalid "trackTime" option passed to ActionDispatcher. Expected "all", "none", "start-only" or "end-only"')
   }
 
   // Validate UUID generation function
@@ -68,7 +81,7 @@ function validateActionDispatcherOptions (options) {
  * @param {function|{ reject: function }} [options.Promise]
  * @param {function} [options.getMicroTime]
  * @param {function|boolean|string} [options.buildUuid] or "none" or false
- * @param {string} [options.includeTime]  may be "all", "start-only", "end-only", "none"
+ * @param {string} [options.trackTime]  may be "all", "start-only", "end-only", "none"
  * @param {string[]|string|boolean} [options.emitActionEvents]  may be "none" (false) or "all" (true)
  * @param {boolean} [options.ensurePromiseImplementation]
  * @returns {object}
@@ -92,6 +105,13 @@ function normalizeActionDispatcherOptions (options) {
   // Make unique list of passed events
   if (Array.isArray(options.emitActionEvents)) {
     options.emitActionEvents = options.emitActionEvents.filter((x, i, arr) => arr.indexOf(x) === i)
+  }
+
+  // Allow booleans for time tracking
+  if (!options.trackTime) {
+    options.trackTime = 'none'
+  } else if (options.trackTime === true || options.trackTime === 'both') {
+    options.trackTime = 'all'
   }
 
   // Replace empty functions
@@ -165,12 +185,17 @@ class ActionDispatcher extends EventEmitter {
    * @param {function|boolean|string} [options.buildUuid]  or false or "none"
    * @param {boolean} [options.ensurePromiseImplementation]
    * @param {function} [options.getMicroTime]
-   * @param {string} [options.includeTime] may be "all", "start-only", "end-only" or "none"
+   * @param {string} [options.trackTime] may be "all", "start-only", "end-only" or "none"
    * @param {string[]|boolean|string} [options.emitActionEvents] may be "none" (false) or "all" (true)
    */
   constructor (options) {
     // Attach EventEmitter
     super()
+
+    // It should disallow constructing abstract function
+    if (this.constructor === ActionDispatcher) {
+      throw new Error('You can\'t create instance of abstract ActionDispatcher class.')
+    }
 
     // Build options
     this.options = Object.assign({}, defaultOptions, options)
@@ -183,12 +208,12 @@ class ActionDispatcher extends EventEmitter {
 
     // Retrieve data for computation
     const getMicroTime = this.options.getMicroTime
-    const includeTime = this.options.includeTime
+    const trackTime = this.options.trackTime
 
     // Extract important options
     this.$Promise = this.options.Promise
-    this.$includeStartTime = includeTime === 'all' || includeTime === 'start-only'
-    this.$includeEndTime = includeTime === 'all' || includeTime === 'end-only'
+    this.$includeStartTime = trackTime === 'all' || trackTime === 'start-only'
+    this.$includeEndTime = trackTime === 'all' || trackTime === 'end-only'
     this.$getStartTime = this.$includeStartTime ? getMicroTime : () => null
     this.$getEndTime = this.$includeEndTime ? getMicroTime : () => null
     this.$buildUuid = this.options.buildUuid
@@ -268,6 +293,7 @@ class ActionDispatcher extends EventEmitter {
    *
    * @param {object} actionContext
    * @returns {Promise|void}
+   * @async if needed
    * @private
    */
   _processAction (actionContext) {}
@@ -319,9 +345,11 @@ class ActionDispatcher extends EventEmitter {
    * Finalize action context, after it's fully executed.
    *
    * @param {object} actionContext
+   * @param {*} [value]
+   * @param {*} [error]
    * @private
    */
-  _finalizeContext (actionContext) {
+  _finalizeContext (actionContext, value, error) {
     actionContext.endTime = this.$getEndTime()
   }
 
@@ -461,13 +489,13 @@ class ActionDispatcher extends EventEmitter {
     return this.$executor = createActionExecutor({
       Promise: this.$Promise,
       ensurePromiseImplementation: this.options.ensurePromiseImplementation,
-      includeContext: false, // TODO: Hmm...
+      includeContext: false,
       isActionSupported: this.hasActionCaller.bind(this),
       createContext: this._createActionContext.bind(this),
-      process: this._processAction.noop ? null : this._processAction.bind(this),
-      preExecute: this._preExecuteAction.noop ? null : this._preExecuteAction.bind(this),
+      process: dummyFunctions.is(this._processAction) ? null : this._processAction.bind(this),
+      preExecute: dummyFunctions.is(this._preExecuteAction) ? null : this._preExecuteAction.bind(this),
       execute: this._executeAction.bind(this),
-      processResult: this._processResult.noop ? null : this._processResult.bind(this),
+      processResult: dummyFunctions.is(this._processResult) ? null : this._processResult.bind(this),
       finalizeContext: this._finalizeContext.bind(this),
       onActionStateChange: this.$createOnActionStateChangeHandler()
     })
@@ -481,13 +509,15 @@ class ActionDispatcher extends EventEmitter {
    */
   $createOnActionStateChangeHandler () {
     // Create map of simple handlers
-    const eventHandlers = {
-      created: this._onActionCreated.noop ? null : this._onActionCreated.bind(this),
-      unknown: this._onActionUnknown.noop ? null : this._onActionUnknown.bind(this),
-      ready: this._onActionReady.noop ? null : this._onActionReady.bind(this),
-      execution: this._onActionExecution.noop ? null : this._onActionExecution.bind(this),
-      success: this._onActionSuccess.noop ? null : this._onActionSuccess.bind(this),
-      error: this._onActionError.noop ? null : this._onActionError.bind(this)
+    const eventHandlers = {}
+
+    // Use proper functions for event handlers
+    for (const eventName in eventHandlingMethods) {
+      const fnName = eventHandlingMethods[eventName]
+      const handler = this[fnName]
+
+      // Initialize handler
+      eventHandlers[eventName] = dummyFunctions.is(handler) ? null : handler.bind(this)
     }
 
     // Get action events which may be emitted
@@ -496,46 +526,43 @@ class ActionDispatcher extends EventEmitter {
     // Override event handler for actions which should be emitted
     for (let i = 0; i < emittedEvents.length; i++) {
       const eventType = emittedEvents[i]
+      const prevHandler = eventHandlers[eventType]
 
-      if (eventHandlers[eventType]) {
-        // Create new handler, which will call handler and emit event
-        eventHandlers[eventType] = new Function('$a', '$h', `return function handleEvent (context, value) {
-          $h(context, value);
-          $a.emit(${JSON.stringify(ActionEvent[eventType])}, context, value);
-        }`)(this, eventHandlers[eventType])
-      } else {
-        // Create new handler, which will emit event
-        eventHandlers[eventType] = new Function('$a', `return function handleEvent (context, value) {
-          $a.emit(${JSON.stringify(ActionEvent[eventType])}, context, value);
-        }`)(this)
-      }
+      // Build code partials
+      const prevHandlerCode = prevHandler ? '$h(context, value);' : ''
+      const emitCode = `$a.emit(${JSON.stringify(ActionEventByStatus[eventType])}, context, value);`
+
+      // Build code of new handler
+      const fnCode = `return function handleEvent (context, value) { ${prevHandlerCode} ${emitCode} }`
+
+      // Create/replace handler which will emit event and call default one
+      eventHandlers[eventType] = prevHandler
+        ? new Function('$a', '$h', fnCode)(this, prevHandler)
+        : new Function('$a', fnCode)(this)
     }
 
-    for (let key in eventHandlers) {
-      if (!eventHandlers[key]) {
-        delete eventHandlers[key]
-      }
-    }
+    // Check number of existing event handlers
+    const eventHandlersCount = Object.keys(eventHandlers).filter(key => eventHandlers[key]).length
 
-    if (Object.keys(eventHandlers).length === 0) {
-      return null
-    }
-
-    return createSimpleMapAccessFunction(eventHandlers, 3, 1)
+    // Build handler if it's needed
+    return eventHandlersCount > 0
+      ? createSimpleMapAccessFunction(eventHandlers, 3, 1)
+      : null
   }
 }
 
 // Mark all event emitting functions as noop,
 // so they will be ignored when they will be not overridden
-ActionDispatcher.prototype._onActionCreated.noop = true
-ActionDispatcher.prototype._onActionUnknown.noop = true
-ActionDispatcher.prototype._onActionReady.noop = true
-ActionDispatcher.prototype._onActionExecution.noop = true
-ActionDispatcher.prototype._onActionSuccess.noop = true
-ActionDispatcher.prototype._onActionError.noop = true
-
-ActionDispatcher.prototype._processAction.noop = true
-ActionDispatcher.prototype._preExecuteAction.noop = true
-ActionDispatcher.prototype._processResult.noop = true
+dummyFunctions.mark(
+  ActionDispatcher.prototype._onActionCreated,
+  ActionDispatcher.prototype._onActionUnknown,
+  ActionDispatcher.prototype._onActionReady,
+  ActionDispatcher.prototype._onActionExecution,
+  ActionDispatcher.prototype._onActionSuccess,
+  ActionDispatcher.prototype._onActionError,
+  ActionDispatcher.prototype._processAction,
+  ActionDispatcher.prototype._preExecuteAction,
+  ActionDispatcher.prototype._processResult
+)
 
 module.exports = ActionDispatcher

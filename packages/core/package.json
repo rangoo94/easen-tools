@@ -27,6 +27,7 @@
     "test": "mocha tests/**/*.spec.js"
   },
   "devDependencies": {
+    "bluebird": "^3.5.4",
     "chai": "^4.2.0",
     "mocha": "^6.1.4"
   },

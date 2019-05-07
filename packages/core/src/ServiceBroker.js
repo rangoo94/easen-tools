@@ -1,7 +1,6 @@
 const ActionDispatcher = require('./ActionDispatcher')
 const ServiceBrokerClientAggregator = require('./ServiceBrokerClientAggregator')
 const ServiceBrokerLocalClient = require('./ServiceBrokerLocalClient')
-const ServiceBrokerLocalTransparentClient = require('./ServiceBrokerLocalTransparentClient')
 const parseServiceBrokerComponents = require('./internal/parseServiceBrokerComponents')
 
 // Set-up default options for ServiceBroker
@@ -24,7 +23,7 @@ class ServiceBroker extends ActionDispatcher {
    * @param {function|{ reject: function }} [options.Promise]
    * @param {function|boolean|string} [options.buildUuid]  or false or "none"
    * @param {function} [options.getMicroTime]
-   * @param {string} [options.includeTime] may be "all", "start-only", "end-only" or "none"
+   * @param {string} [options.trackTime] may be "all", "start-only", "end-only" or "none"
    * @param {string[]|boolean|string} [options.emitActionEvents] may be "none" (false) or "all" (true)
    */
   constructor (processors, negotiators, executors, actions, options) {
@@ -47,7 +46,8 @@ class ServiceBroker extends ActionDispatcher {
     const aggregator = this.clientAggregator = new ServiceBrokerClientAggregator(this.options)
     this.$callClient = (context, name, params) => aggregator.call(name, params, { parentUuid: context.uuid })
 
-    // Extract 'createActionContext' from ActionDispatcher
+    // Extract 'createActionContext' from ActionDispatcher,
+    // Using `super` in function body is super-slow
     this.$createActionContext = super._createActionContext
   }
 
@@ -77,19 +77,6 @@ class ServiceBroker extends ActionDispatcher {
    */
   createLocalClient (options) {
     return new ServiceBrokerLocalClient(
-      this,
-      Object.assign({}, this.options, options)
-    )
-  }
-
-  /**
-   * Create local client for this service broker.
-   *
-   * @param {object} [options]
-   * @returns {ServiceBrokerLocalTransparentClient}
-   */
-  createLocalTransparentClient (options) {
-    return new ServiceBrokerLocalTransparentClient(
       this,
       Object.assign({}, this.options, options)
     )

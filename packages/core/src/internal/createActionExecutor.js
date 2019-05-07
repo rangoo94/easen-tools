@@ -1,11 +1,13 @@
-const ServiceActionNotFoundError = require('./ServiceError/ServiceActionNotFoundError')
-const ActionExecutorFunctionBuilder = require('./internal/ActionExecutorFunctionBuilder')
+const ServiceActionNotFoundError = require('../ServiceError/ServiceActionNotFoundError')
+const ActionExecutorFunctionBuilder = require('./ActionExecutorFunctionBuilder')
 
 // Set up default options for action executor
 
 const defaultOptions = {
   Promise: Promise,
+  includeContext: true,
   ensurePromiseImplementation: true,
+  onUncaughtError: null,
   onActionStateChange: null,
   createContext: null,
   isActionSupported: null,
@@ -61,6 +63,7 @@ function validateActionExecutorOptions (options) {
  * @param {function(object): *} [options.execute]
  * @param {function(object, object)} [options.finalizeContext]
  * @param {function(object, object)} [options.processResult]
+ * @param {function} [options.onUncaughtError]
  * @returns {function(string, [object], [object]): Promise<*,*>|{ context: object }}
  */
 function createActionExecutor (options) {
@@ -84,6 +87,9 @@ function createActionExecutor (options) {
   const executeAction = options.execute
   const finalizeContext = options.finalizeContext
   const processResult = options.processResult
+  const onUncaughtError = typeof options.onUncaughtError === 'function'
+    ? options.onUncaughtError
+    : console.warn.bind(console)
 
   // Initialize side effects
 
@@ -91,7 +97,7 @@ function createActionExecutor (options) {
     try {
       onActionStateChange(state, context, value)
     } catch (error) {
-      console.warn(error)
+      onUncaughtError(error)
     }
   } : null
 
@@ -130,7 +136,7 @@ function createActionExecutor (options) {
     .open()
       // Pass ImmediateResult down
       .declare('$v', '$error.value')
-      .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx' ])
+      .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx', '$v' ])
       .callAvailable('$v', InternalFnNames.processResult, [ '$v', '$ctx' ])
 
       // Emit "success" event
@@ -140,7 +146,7 @@ function createActionExecutor (options) {
     .close()
 
     // Handle real error
-    .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx' ])
+    .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx', 'undefined', '$error' ])
 
     // Emit "error" event
     .callAvailable(null, InternalFnNames.emit, [ '"error"', '$ctx', '$error' ])
@@ -154,7 +160,7 @@ function createActionExecutor (options) {
     .setArguments('$ctx', '$v')
 
     // Execute callback
-    .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx' ])
+    .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx', '$v' ])
     .callAvailable('$v', InternalFnNames.processResult, [ '$v', '$ctx' ])
 
     // Emit "success" event
@@ -182,7 +188,7 @@ function createActionExecutor (options) {
     )
 
     // Execute callback
-    .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx' ])
+    .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx', '$v' ])
     .callAvailable('$v', InternalFnNames.processResult, [ '$v', '$ctx' ])
 
     // Emit "success" event
@@ -223,7 +229,7 @@ function createActionExecutor (options) {
     )
 
     // Execute callback
-    .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx' ])
+    .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx', '$v' ])
     .callAvailable('$v', InternalFnNames.processResult, [ '$v', '$ctx' ])
 
     // Emit "success" event
@@ -241,6 +247,7 @@ function createActionExecutor (options) {
     .setContext('$proCb', fnProcessCallback.build())
     .setContext('$errCb', fnHandleError.build())
     .setErrorHandlerCode('return $errCb($ctx, $error);')
+
     .setErrorHandlerCode(includeContext ? `try {
       var $$promise = Promise.resolve($errCb($ctx, $error));
       $$promise.context = $ctx;
@@ -262,7 +269,7 @@ function createActionExecutor (options) {
         .append(`var $cc = ${InternalFnNames.processAction}($ctx);`)
         .handleAsyncContinuation(
           '$cc',
-          '$preCb.bind(undefined, $ctx)',
+          '$proCb.bind(undefined, $ctx)',
           '$errCb.bind(undefined, $ctx)',
           ensurePromiseImplementation
         )
@@ -303,7 +310,7 @@ function createActionExecutor (options) {
     )
 
     // Execute callback
-    .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx' ])
+    .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx', '$v' ])
     .callAvailable('$v', InternalFnNames.processResult, [ '$v', '$ctx' ])
 
     // Emit "success" event
@@ -327,15 +334,16 @@ function createActionExecutor (options) {
     .whenAvailable(InternalFnNames.isActionSupported, x => x
       .conditional(`!${InternalFnNames.isActionSupported}(name)`)
       .open()
-        .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx' ])
+        .declare('$errorUnknown', 'Promise.reject(new ServiceActionNotFoundError())')
+        .callAvailable(null, InternalFnNames.finalizeContext, [ '$ctx', 'undefined', '$errorUnknown' ])
 
         // Emit "unknown" event
         .callAvailable(null, InternalFnNames.emit, [ '"unknown"', '$ctx' ])
 
         .when(
           includeContext,
-          x => x.finishWithContext('Promise.reject(new ServiceActionNotFoundError())', '$ctx'),
-          x => x.finish('Promise.reject(new ServiceActionNotFoundError())')
+          x => x.finishWithContext('$errorUnknown', '$ctx'),
+          x => x.finish('$errorUnknown')
         )
       .close()
     )
