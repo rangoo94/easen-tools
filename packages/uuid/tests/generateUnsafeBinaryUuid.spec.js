@@ -6,11 +6,11 @@ const generateUnsafeBinaryUuid = require('../src/generateUnsafeBinaryUuid')
 
 describe('uuid', () => {
   describe('generateUnsafeBinaryUuid', () => {
-    it ('should generate unique binary UUIDs', () => {
+    it('should generate unique binary UUIDs', () => {
       expect(hasUniqueBinaryGeneration(generateUnsafeBinaryUuid)).to.equal(true)
     })
 
-    it ('should generate 128-bit array', () => {
+    it('should generate 128-bit array', () => {
       for (let i = 0; i < 1e3; i++) {
         const uuid = generateUnsafeBinaryUuid()
 
@@ -19,7 +19,7 @@ describe('uuid', () => {
       }
     })
 
-    it ('should have UUID determine bits set correctly', () => {
+    it('should have UUID determine bits set correctly', () => {
       for (let i = 0; i < 1e3; i++) {
         const uuid = generateUnsafeBinaryUuid()
 

@@ -24,7 +24,7 @@
     "src/**/*"
   ],
   "scripts": {
-    "test": "mocha tests/**/*.spec.js"
+    "test": "mocha tests/{**,}/*.spec.js"
   },
   "devDependencies": {
     "bluebird": "^3.5.4",

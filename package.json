@@ -10,12 +10,24 @@
   },
   "scripts": {
     "install-all": "npm install && node scripts/install-all.js",
-    "test": "nyc --report-dir build/logs --reporter clover --reporter text mocha packages/*/tests/**/*.spec.js"
+    "test": "nyc mocha ./packages/*/tests/{**,}/*.spec.js"
   },
   "author": "Dawid Rusnak <dawid@drcode.pl>",
   "license": "MIT",
   "devDependencies": {
     "mocha": "^6.1.4",
     "nyc": "^14.1.0"
+  },
+  "nyc": {
+    "all": true,
+    "reportDir": "build/logs",
+    "reporter": [ "clover", "text" ],
+    "include": [
+      "packages/*/src/{**,}/*.js"
+    ],
+    "exclude": [
+      "packages/*/tests/{**,}/*.js",
+      "packages/uuid/benchmark/{**,}/*.js"
+    ]
   }
 }
