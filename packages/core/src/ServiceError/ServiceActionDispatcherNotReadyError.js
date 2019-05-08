@@ -1,20 +1,14 @@
-const ServiceError = require('../ServiceError')
+const createServiceErrorSubClass = require('../createServiceErrorSubClass')
 
 /**
  * Error, which says that ActionDispatcher (i.e. service broker),
  * wasn't ready yet to handle this action.
  *
- * @inheritDoc
+ *
+ * @class ServiceActionDispatcherNotReadyError
+ * @extends ServiceError
  */
-class ServiceActionDispatcherNotReadyError extends ServiceError {
-  /**
-   * @param {*} [body]
-   */
-  constructor (body) {
-    super(body)
-    this.name = 'ServiceActionDispatcherNotReadyError'
-    this.code = 502
-  }
-}
-
-module.exports = ServiceActionDispatcherNotReadyError
+module.exports = createServiceErrorSubClass(
+  'ServiceActionDispatcherNotReadyError',
+  502
+)

@@ -1,6 +1,7 @@
 const expect = require('chai').expect
 
 const ServiceActionUnauthorizedError = require('../../src/ServiceError/ServiceActionUnauthorizedError')
+const ServiceError = require('../../src/ServiceError')
 
 describe('core', () => {
   describe('ServiceError.ServiceActionUnauthorizedError', () => {
@@ -8,8 +9,10 @@ describe('core', () => {
       expect(new ServiceActionUnauthorizedError().$serviceError).to.be.equal(true)
     })
 
-    it('should be Error instance', () => {
+    it('should have proper instance type', () => {
       expect(new ServiceActionUnauthorizedError()).to.be.instanceOf(Error)
+      expect(new ServiceActionUnauthorizedError()).to.be.instanceOf(ServiceError)
+      expect(new ServiceActionUnauthorizedError()).to.be.instanceOf(ServiceActionUnauthorizedError)
     })
 
     it('should have proper name', () => {

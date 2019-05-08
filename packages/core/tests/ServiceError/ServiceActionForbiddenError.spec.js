@@ -1,6 +1,7 @@
 const expect = require('chai').expect
 
 const ServiceActionForbiddenError = require('../../src/ServiceError/ServiceActionForbiddenError')
+const ServiceError = require('../../src/ServiceError')
 
 describe('core', () => {
   describe('ServiceError.ServiceActionForbiddenError', () => {
@@ -8,8 +9,10 @@ describe('core', () => {
       expect(new ServiceActionForbiddenError().$serviceError).to.be.equal(true)
     })
 
-    it('should be Error instance', () => {
+    it('should have proper instance type', () => {
       expect(new ServiceActionForbiddenError()).to.be.instanceOf(Error)
+      expect(new ServiceActionForbiddenError()).to.be.instanceOf(ServiceError)
+      expect(new ServiceActionForbiddenError()).to.be.instanceOf(ServiceActionForbiddenError)
     })
 
     it('should have proper name', () => {

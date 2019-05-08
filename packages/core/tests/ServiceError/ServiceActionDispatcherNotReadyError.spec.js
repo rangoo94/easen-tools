@@ -1,6 +1,7 @@
 const expect = require('chai').expect
 
 const ServiceActionDispatcherNotReadyError = require('../../src/ServiceError/ServiceActionDispatcherNotReadyError')
+const ServiceError = require('../../src/ServiceError')
 
 describe('core', () => {
   describe('ServiceError.ServiceActionDispatcherNotReadyError', () => {
@@ -8,8 +9,10 @@ describe('core', () => {
       expect(new ServiceActionDispatcherNotReadyError().$serviceError).to.be.equal(true)
     })
 
-    it('should be Error instance', () => {
+    it('should have proper instance type', () => {
       expect(new ServiceActionDispatcherNotReadyError()).to.be.instanceOf(Error)
+      expect(new ServiceActionDispatcherNotReadyError()).to.be.instanceOf(ServiceError)
+      expect(new ServiceActionDispatcherNotReadyError()).to.be.instanceOf(ServiceActionDispatcherNotReadyError)
     })
 
     it('should have proper name', () => {

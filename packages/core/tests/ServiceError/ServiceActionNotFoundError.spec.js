@@ -1,6 +1,7 @@
 const expect = require('chai').expect
 
 const ServiceActionNotFoundError = require('../../src/ServiceError/ServiceActionNotFoundError')
+const ServiceError = require('../../src/ServiceError')
 
 describe('core', () => {
   describe('ServiceError.ServiceActionNotFoundError', () => {
@@ -8,8 +9,10 @@ describe('core', () => {
       expect(new ServiceActionNotFoundError().$serviceError).to.be.equal(true)
     })
 
-    it('should be Error instance', () => {
+    it('should have proper instance type', () => {
       expect(new ServiceActionNotFoundError()).to.be.instanceOf(Error)
+      expect(new ServiceActionNotFoundError()).to.be.instanceOf(ServiceError)
+      expect(new ServiceActionNotFoundError()).to.be.instanceOf(ServiceActionNotFoundError)
     })
 
     it('should have proper name', () => {

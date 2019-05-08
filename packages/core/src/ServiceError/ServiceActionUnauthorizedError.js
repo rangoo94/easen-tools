@@ -1,20 +1,13 @@
-const ServiceError = require('../ServiceError')
+const createServiceErrorSubClass = require('../createServiceErrorSubClass')
 
 /**
  * Error, which says that expected action requires authorization,
  * but no valid authorization data were provided.
  *
- * @inheritDoc
+ * @class ServiceActionUnauthorizedError
+ * @extends ServiceError
  */
-class ServiceActionUnauthorizedError extends ServiceError {
-  /**
-   * @param {*} [body]
-   */
-  constructor (body) {
-    super(body)
-    this.name = 'ServiceActionUnauthorizedError'
-    this.code = 401
-  }
-}
-
-module.exports = ServiceActionUnauthorizedError
+module.exports = createServiceErrorSubClass(
+  'ServiceActionUnauthorizedError',
+  401
+)

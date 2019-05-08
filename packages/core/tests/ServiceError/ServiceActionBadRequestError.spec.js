@@ -1,6 +1,7 @@
 const expect = require('chai').expect
 
 const ServiceBadRequestError = require('../../src/ServiceError/ServiceBadRequestError')
+const ServiceError = require('../../src/ServiceError')
 
 describe('core', () => {
   describe('ServiceError.ServiceBadRequestError', () => {
@@ -8,8 +9,10 @@ describe('core', () => {
       expect(new ServiceBadRequestError().$serviceError).to.be.equal(true)
     })
 
-    it('should be Error instance', () => {
+    it('should have proper instance type', () => {
       expect(new ServiceBadRequestError()).to.be.instanceOf(Error)
+      expect(new ServiceBadRequestError()).to.be.instanceOf(ServiceError)
+      expect(new ServiceBadRequestError()).to.be.instanceOf(ServiceBadRequestError)
     })
 
     it('should have proper name', () => {
