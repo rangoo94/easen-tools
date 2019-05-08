@@ -113,8 +113,7 @@ class ServiceBrokerClientAggregator extends ActionDispatcher {
 
       // Iterate over all actions available within client
       for (let j = 0; j < actions.length; j++) {
-        const annotations = client.getActionAnnotations ? client.getActionAnnotations(actions[j]) : []
-        this.$registerAction(actionPrefix, actions[j], client, annotations)
+        this.$registerAction(actionPrefix, actions[j], client)
       }
     }
   }
@@ -125,14 +124,13 @@ class ServiceBrokerClientAggregator extends ActionDispatcher {
    * @param {string} prefix
    * @param {string} name
    * @param {ActionDispatcher} client
-   * @param {object} [annotations]
    * @private
    */
-  $registerAction (prefix, name, client, annotations) {
+  $registerAction (prefix, name, client) {
     const alias = prefix + name
 
     this._actions[alias] = client.call.bind(client, name)
-    this._annotations[alias] = annotations || {}
+    this._annotations[alias] = client.getActionAnnotations ? client.getActionAnnotations(name) : []
   }
 
   /**

@@ -71,26 +71,16 @@ function isServiceBrokerComponentsListValid (componentsList, shouldHaveExpressio
 }
 
 /**
- * Parse all service broker components,
- * so it will have everything extracted and prepared for use.
+ * Validate service broker components,
+ * and throw error when something is invalid.
  *
  * @param {Array<{ handler: function, annotations: object, expression: RegExp }>} processors
  * @param {Array<{ handler: function, annotations: object, expression: RegExp }>} negotiators
  * @param {Array<{ handler: function, annotations: object, expression: RegExp }>} executors
  * @param {Array<{ name: string, handler: function, annotations: object }>} actions
- * @returns {{ annotations: object, processors: object, actions: object, negotiators: object }}
+ * @throws {Error}
  */
-function parseServiceBrokerComponents (processors, negotiators, executors, actions) {
-  // Initialize empty object with data
-  const result = {
-    processors: {},
-    negotiators: {},
-    actions: {},
-    annotations: {},
-    hasAnyProcessors: false,
-    hasAnyNegotiators: false
-  }
-
+function validateServiceBrokerComponents (processors, negotiators, executors, actions) {
   // Validate pre-processors list
   if (!isServiceBrokerComponentsListValid(processors, true)) {
     throw new Error('Invalid pre-processors list passed to ServiceBroker.')
@@ -110,6 +100,29 @@ function parseServiceBrokerComponents (processors, negotiators, executors, actio
   if (!isServiceBrokerComponentsListValid(actions, false, true)) {
     throw new Error('Invalid actions list passed to ServiceBroker.')
   }
+}
+
+/**
+ * Parse all service broker components,
+ * so it will have everything extracted and prepared for use.
+ *
+ * @param {Array<{ handler: function, annotations: object, expression: RegExp }>} processors
+ * @param {Array<{ handler: function, annotations: object, expression: RegExp }>} negotiators
+ * @param {Array<{ handler: function, annotations: object, expression: RegExp }>} executors
+ * @param {Array<{ name: string, handler: function, annotations: object }>} actions
+ * @returns {{ annotations: object, processors: object, actions: object, negotiators: object }}
+ */
+function parseServiceBrokerComponents (processors, negotiators, executors, actions) {
+  // Validate passed arguments
+  validateServiceBrokerComponents(processors, negotiators, executors, actions)
+
+  // Initialize empty object with data
+  const result = {
+    processors: {},
+    negotiators: {},
+    actions: {},
+    annotations: {}
+  }
 
   // Iterate over all actions to build parts for them
   for (let i = 0; i < actions.length; i++) {
@@ -121,34 +134,17 @@ function parseServiceBrokerComponents (processors, negotiators, executors, actio
     const actionNegotiators = negotiators.filter(x => x.expression.test(action.name))
     const actionExecutors = executors.filter(x => x.expression.test(action.name))
 
-    // Find all annotations (ignore empty annotations, except final action handler)
-    const actionAnnotations = []
-      .concat(actionProcessors.map(x => x.annotations))
-      .concat(actionNegotiators.map(x => x.annotations))
-      .concat(actionExecutors.map(x => x.annotations))
+    // Find all annotations (ignore empty annotations, except final action handler),
+    // and put them in result
+    result.annotations[action.name] = [].concat(actionProcessors, actionNegotiators, actionExecutors)
+      .map(x => x.annotations)
       .filter(x => Object.keys(x).length > 0)
       .concat(action.annotations)
 
     // Combine all parts into single functions
-    const actionFinalProcessor = buildChainedFunction(actionProcessors.map(x => x.handler), 1)
-    const actionFinalNegotiator = buildChainedFunction(actionNegotiators.map(x => x.handler), 1)
-    const actionFinalHandler = buildChainedFunction(actionExecutors.concat(action).map(x => x.handler), 1)
-
-    // Put computed data in result object
-    result.processors[action.name] = actionFinalProcessor
-    result.negotiators[action.name] = actionFinalNegotiator
-    result.actions[action.name] = actionFinalHandler
-    result.annotations[action.name] = actionAnnotations
-
-    // Mark processors as existing concept in this service broker
-    if (actionProcessors.length > 0) {
-      result.hasAnyProcessors = true
-    }
-
-    // Mark negotiators as existing concept in this service broker
-    if (actionNegotiators.length > 0) {
-      result.hasAnyNegotiators = true
-    }
+    result.processors[action.name] = buildChainedFunction(actionProcessors.map(x => x.handler), 1)
+    result.negotiators[action.name] = buildChainedFunction(actionNegotiators.map(x => x.handler), 1)
+    result.actions[action.name] = buildChainedFunction(actionExecutors.concat(action).map(x => x.handler), 1)
   }
 
   // Freeze result object, so nothing will be changed here

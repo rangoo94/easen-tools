@@ -75,17 +75,9 @@ class FunctionBuilder {
    */
   when (assertion, fnOrCode, otherwiseFnOrCode) {
     if (assertion) {
-      if (typeof fnOrCode === 'string') {
-        this.append(fnOrCode)
-      } else {
-        fnOrCode(this)
-      }
+      this.append(fnOrCode)
     } else if (otherwiseFnOrCode !== undefined) {
-      if (typeof otherwiseFnOrCode === 'string') {
-        this.append(otherwiseFnOrCode)
-      } else {
-        otherwiseFnOrCode(this)
-      }
+      this.append(otherwiseFnOrCode)
     }
 
     return this
@@ -114,12 +106,16 @@ class FunctionBuilder {
   /**
    * Append code at the end.
    *
-   * @param {string} code
+   * @param {string|function(FunctionBuilder)} fnOrCode
    * @returns {FunctionBuilder|this}
    * @chainable
    */
-  append (code) {
-    this._code += code
+  append (fnOrCode) {
+    if (typeof fnOrCode === 'function') {
+      fnOrCode(this)
+    } else {
+      this._code += fnOrCode
+    }
 
     return this
   }

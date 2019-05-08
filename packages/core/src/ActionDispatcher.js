@@ -122,6 +122,19 @@ function normalizeActionDispatcherOptions (options) {
 }
 
 /**
+ * Get object handler, or null if it's dummy handler.
+ *
+ * @param {ActionDispatcher} actionDispatcher
+ * @param {string} methodName
+ * @returns {function|null}
+ */
+function getObjectHandler (actionDispatcher, methodName) {
+  const fn = actionDispatcher[methodName]
+
+  return dummyFunctions.is(fn) ? null : fn.bind(actionDispatcher)
+}
+
+/**
  * Fired after action is requested.
  *
  * @event ActionDispatcher#event:action-created
@@ -493,11 +506,11 @@ class ActionDispatcher extends EventEmitter {
       includeContext: false,
       isActionSupported: this.hasActionCaller.bind(this),
       createContext: this._createActionContext.bind(this),
-      process: dummyFunctions.is(this._processAction) ? null : this._processAction.bind(this),
-      preExecute: dummyFunctions.is(this._preExecuteAction) ? null : this._preExecuteAction.bind(this),
-      execute: this._executeAction.bind(this),
-      processResult: dummyFunctions.is(this._processResult) ? null : this._processResult.bind(this),
-      finalizeContext: this._finalizeContext.bind(this),
+      process: getObjectHandler(this, '_processAction'),
+      preExecute: getObjectHandler(this, '_preExecuteAction'),
+      execute: getObjectHandler(this, '_executeAction'),
+      processResult: getObjectHandler(this, '_processResult'),
+      finalizeContext: getObjectHandler(this, '_finalizeContext'),
       onActionStateChange: this.$createOnActionStateChangeHandler()
     })
   }
@@ -514,11 +527,10 @@ class ActionDispatcher extends EventEmitter {
 
     // Use proper functions for event handlers
     for (const eventName in eventHandlingMethods) {
-      const fnName = eventHandlingMethods[eventName]
-      const handler = this[fnName]
+      const methodName = eventHandlingMethods[eventName]
 
       // Initialize handler
-      eventHandlers[eventName] = dummyFunctions.is(handler) ? null : handler.bind(this)
+      eventHandlers[eventName] = getObjectHandler(this, methodName)
     }
 
     // Get action events which may be emitted

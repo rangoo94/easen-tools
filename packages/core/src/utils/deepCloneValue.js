@@ -1,28 +1,26 @@
 /**
- * Copy value.
- * Optimized for single level objects,
- * as it's probably most often happening case.
+ * Deep-copy array.
  *
- * @param {*} initialValue
- * @returns {*}
+ * @param {array} initialValue
+ * @returns {array}
  */
-function deepCloneValue (initialValue) {
-  // Return back value which is not an object
-  if (!initialValue || typeof initialValue !== 'object') {
-    return initialValue
+function deepCloneArray (initialValue) {
+  const result = new Array(initialValue.length)
+
+  for (let i = 0; i < initialValue.length; i++) {
+    result[i] = deepCloneValue(initialValue[i])
   }
 
-  // Copy array correctly
-  if (Array.isArray(initialValue)) {
-    const result = new Array(initialValue.length)
+  return result
+}
 
-    for (let i = 0; i < initialValue.length; i++) {
-      result[i] = deepCloneValue(initialValue[i])
-    }
-
-    return result
-  }
-
+/**
+ * Deep-clone regular object.
+ *
+ * @param {object} initialValue
+ * @returns {object}
+ */
+function deepCloneObject (initialValue) {
   // Prepare new object
   const result = {}
 
@@ -43,6 +41,26 @@ function deepCloneValue (initialValue) {
   }
 
   return result
+}
+
+/**
+ * Deep-copy any value.
+ * Optimized for single level objects,
+ * as it's probably most often happening case.
+ *
+ * @param {*} initialValue
+ * @returns {*}
+ */
+function deepCloneValue (initialValue) {
+  // Return back value which is not an object
+  if (!initialValue || typeof initialValue !== 'object') {
+    return initialValue
+  }
+
+  // Copy array or regular object
+  return Array.isArray(initialValue)
+    ? deepCloneArray(initialValue)
+    : deepCloneObject(initialValue)
 }
 
 module.exports = deepCloneValue

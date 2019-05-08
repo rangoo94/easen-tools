@@ -1,33 +1,28 @@
 const deepCloneValue = require('./deepCloneValue')
 
 /**
- * Deep-freeze and copy object (when it's possible).
+ * Deep-freeze and copy array.
  *
- * @param {*} object
- * @returns {*}
+ * @param {Array} array
+ * @returns {Array}
  */
-function createFrozenCopy (object) {
-  // Deep copy object only, when freeze is not available
-  if (!Object.freeze) {
-    return deepCloneValue(object)
-  }
+function createFrozenArrayCopy (array) {
+  // Freeze all elements
+  const result = array.map(createFrozenCopy)
 
-  // When it's not object, ignore it
-  if (!object || typeof object !== 'object') {
-    return object
-  }
+  // Freeze array itself
+  Object.freeze(result)
 
-  // Handle array as well
-  if (Array.isArray(object)) {
-    // Freeze all elements
-    const result = object.map(createFrozenCopy)
+  return result
+}
 
-    // Freeze array itself
-    Object.freeze(result)
-
-    return result
-  }
-
+/**
+ * Deep-freeze and copy object.
+ *
+ * @param {object} object
+ * @returns {object}
+ */
+function createFrozenObjectCopy (object) {
   // Initiate result object
   const result = {}
 
@@ -42,6 +37,29 @@ function createFrozenCopy (object) {
   Object.freeze(result)
 
   return result
+}
+
+/**
+ * Deep-freeze and copy object (when it's possible).
+ *
+ * @param {*} object
+ * @returns {*}
+ */
+function createFrozenCopy (object) {
+  // When it's not object, ignore it
+  if (!object || typeof object !== 'object') {
+    return object
+  }
+
+  // Deep copy object only, when freeze is not available
+  if (!Object.freeze) {
+    return deepCloneValue(object)
+  }
+
+  // Handle arrays and regular objects
+  return Array.isArray(object)
+    ? createFrozenArrayCopy(object)
+    : createFrozenObjectCopy(object)
 }
 
 module.exports = createFrozenCopy
