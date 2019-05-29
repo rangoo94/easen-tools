@@ -108,6 +108,7 @@ class ServiceBrokerBuilder {
    * @chainable
    */
   registerProcessingMiddleware (handler, annotations) {
+    /* istanbul ignore next */
     return this._registerMiddleware('processing', '**', handler, annotations)
   }
 
@@ -121,6 +122,7 @@ class ServiceBrokerBuilder {
    * @chainable
    */
   registerNegotiatingMiddleware (handler, annotations) {
+    /* istanbul ignore next */
     return this._registerMiddleware('negotiating', '**', handler, annotations)
   }
 
@@ -134,6 +136,7 @@ class ServiceBrokerBuilder {
    * @chainable
    */
   registerExecutionMiddleware (handler, annotations) {
+    /* istanbul ignore next */
     return this._registerMiddleware('execution', '**', handler, annotations)
   }
 
@@ -217,11 +220,13 @@ class ServiceBrokerBuilder {
    * @chainable
    */
   registerClient (client) {
+    /* istanbul ignore next */
     this._clients.push({
       namespace: null,
       client: client
     })
 
+    /* istanbul ignore next */
     return this
   }
 

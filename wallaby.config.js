@@ -15,6 +15,10 @@ module.exports = function () {
       runner: 'node'
     },
 
+    hints: {
+      ignoreCoverage: 'istanbul ignore'
+    },
+
     setup: function (wallaby) {
       wallaby.testFramework.ui('tdd')
     },
