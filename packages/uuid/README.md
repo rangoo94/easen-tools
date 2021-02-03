@@ -76,8 +76,8 @@ uuid.test(c) // false
 
 Benchmark code is available in [benchmark](benchmark) directory.
 
-Tests were running on MacBook Pro, early 2015 (Intel(R) Core(TM) i5-5257U CPU @ 2.70GHz, 8GB RAM).
-Tested on Node.js v11.9.0.
+Tests were running on MacBook Pro, 2018 (Intel(R) Core(TM) i5-8259U CPU @ 2.30GHz, 16GB RAM).
+Tested on Node.js v14.15.4.
 
 ## Observations
 
