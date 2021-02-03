@@ -1,4 +1,4 @@
 const uuid = require('uuid-random')
-uuid.BUFFER_SIZE = 16384
+uuid.BUFFER_SIZE = require('../../src/shared/bufferSize')
 
 module.exports = uuid.bin

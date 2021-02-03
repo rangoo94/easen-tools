@@ -2,7 +2,7 @@
 const crypto = require('crypto')
 
 // Configuration
-const bufferSize = 16384
+const bufferSize = require('../shared/bufferSize')
 
 // Initialize buffer for random bytes
 const buffer = crypto.randomBytes(bufferSize)

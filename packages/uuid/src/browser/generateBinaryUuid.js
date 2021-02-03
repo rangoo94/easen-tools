@@ -2,7 +2,7 @@
 const crypto = require('./getCryptoInstance')()
 
 // Configuration
-const bufferSize = 16384
+const bufferSize = require('../shared/bufferSize')
 
 // Initialize buffer for random bytes
 let buffer = new Uint8Array(bufferSize)
