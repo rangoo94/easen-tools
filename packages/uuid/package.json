@@ -1,6 +1,6 @@
 {
   "name": "@easen-tools/uuid",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Generate fast and cryptographically secure UUID v4",
   "homepage": "https://github.com/rangoo94/easen-tools/tree/master/packages/uuid#readme",
   "bugs": "https://github.com/rangoo94/easen-tools/issues",
@@ -21,8 +21,11 @@
   ],
   "license": "MIT",
   "main": "index.js",
+  "types": "index.d.ts",
   "files": [
-    "src/**/*"
+    "src/**/*",
+    "index.js",
+    "index.d.ts"
   ],
   "scripts": {
     "test": "mocha tests/{**,}/*.spec.js"
