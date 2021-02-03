@@ -15,15 +15,6 @@ function getCryptoInstance () {
     return window.msCrypto
   }
 
-  // Check for Crypto module
-  if (typeof module !== 'undefined' && typeof require === 'function') {
-    try {
-      return require('crypto')
-    } catch (error) {
-      // Ignore missing 'crypto' package
-    }
-  }
-
   // Can't find :(
   return null
 }

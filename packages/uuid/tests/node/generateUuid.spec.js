@@ -1,8 +1,8 @@
 const expect = require('chai').expect
-const hasUniqueStringGeneration = require('./helpers/hasUniqueStringGeneration')
+const hasUniqueStringGeneration = require('../helpers/hasUniqueStringGeneration')
 
 // Retrieve tested function
-const generateUuid = require('../src/generateUuid')
+const generateUuid = require('../../src/node/generateUuid')
 
 describe('uuid', () => {
   describe('generateUuid', () => {

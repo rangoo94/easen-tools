@@ -77,45 +77,48 @@ uuid.test(c) // false
 Benchmark code is available in [benchmark](benchmark) directory.
 
 Tests were running on MacBook Pro, 2018 (Intel(R) Core(TM) i5-8259U CPU @ 2.30GHz, 16GB RAM).
-Tested on Node.js v14.15.4.
+Tested on Node.js v15.8.0.
 
 ## Observations
 
-* `@easen-tools/uuid` binary implementation, even cryptographically secure, is much faster than anything else
-* `@easen-tools/uuid` string implementation, even cryptographically secure, is fastest
-  * it's far faster than `uuid`
-  * cryptographically secure algorithm has similar performance as not secure
-  * Implementation [embedded in Moleculer](https://github.com/moleculerjs/moleculer/blob/aab42e5accd3dded86e1dc341ab819f952fec378/src/utils.js#L37) is similar to unsafe string representation,
-    so it has similar performance.
+* It's far faster than any other library
+  * 2-3 times faster than `uuid-random`
+  * over 6 times faster than native `Crypto.randomUUID`
+  * 20-30 times faster than `uuid` module
+* In newer Node.js, cryptographically secure algorithm is even faster than unsafe
 
 ## Results
 
 | Implementation                                           | Representation | Secure | ops/sec                     |
 |----------------------------------------------------------|----------------|:------:|-----------------------------|
-| **@easen-tools/uuid**                                    | binary         | ✔      | 33,246,642 ops/sec *±0.76%* |
-| **@easen-tools/uuid**                                    | binary         | ✖      | 25,036,181 ops/sec *±0.59%* |
-| [uuid-random](https://www.npmjs.com/package/uuid-random) | binary         | ✔      | 15,019,871 ops/sec *±0.69%* |
-| [uuid-random](https://www.npmjs.com/package/uuid-random) | string         | ✔      | 10,446,971 ops/sec *±0.64%* |
-| **@easen-tools/uuid**                                    | string         | ✔      | 10,372,691 ops/sec *±0.73%* |
-| [Moleculer (embedded)](https://github.com/moleculerjs/moleculer/blob/aab42e5accd3dded86e1dc341ab819f952fec378/src/utils.js#L37) | string         | ✖      | 4,999,143 ops/sec *±0.91%* |
-| **@easen-tools/uuid**                                    | string         | ✖      | 4,998,117 ops/sec *±0.67%*  |
-| ['uuid' module](https://www.npmjs.com/package/uuid)      | string         | ✔      | 1,152,845 ops/sec *±0.61%*  |
-| ['uuid' module](https://www.npmjs.com/package/uuid)      | binary         | ✔      | 1,071,768 ops/sec *±2.32%*  |
-| [fast-uuid](https://www.npmjs.com/package/fast-uuid)     | string         | ✖      | 807,137 ops/sec *±0.82%*    |
+| **@easen-tools/uuid**                                    | binary         | ✔      | 38,770,508 ops/sec *±0.90%* |
+| **@easen-tools/uuid**                                    | binary         | ✖      | 26,632,001 ops/sec *±0.75%* |
+| **@easen-tools/uuid**                                    | string         | ✔      | 20,020,123 ops/sec *±0.58%* |
+| [uuid-random](https://www.npmjs.com/package/uuid-random) | binary         | ✔      | 16,171,541 ops/sec *±0.80%* |
+| **@easen-tools/uuid**                                    | string         | ✖      | 13,117,311 ops/sec *±0.65%* |
+| [uuid-random](https://www.npmjs.com/package/uuid-random) | string         | ✔      | 10,966,767 ops/sec *±0.82%* |
+| [Moleculer (embedded)](https://github.com/moleculerjs/moleculer/blob/aab42e5accd3dded86e1dc341ab819f952fec378/src/utils.js#L37) | string         | ✖      | 5,894,184 ops/sec *±0.60%* |
+| [Crypto.randomUUID](https://nodejs.org/api/crypto.html#crypto_crypto_randomuuid_options) | string         | ✔      | 3,901,747 ops/sec *±1.00%* |
+| ['uuid' module](https://www.npmjs.com/package/uuid)      | string         | ✔      | 1,157,118 ops/sec *±2.35%*  |
+| ['uuid' module](https://www.npmjs.com/package/uuid)      | binary         | ✔      | 878,645 ops/sec *±3.40%*    |
+| [fast-uuid](https://www.npmjs.com/package/fast-uuid)     | string         | ✖      | 843,504 ops/sec *±0.55%*    |
+| [Crypto.randomUUID](https://nodejs.org/api/crypto.html#crypto_crypto_randomuuid_options) (without cache) | string         | ✔      | 349,835 ops/sec *±6.38%* |
 
 ### Raw results
 
 Raw results from [benchmark](benchmark), I have only sorted them from fastest to slowest.
 
 ```
-02-easen-binary x 33,246,642 ops/sec ±0.76% (91 runs sampled)
-01-easen-unsafe-binary x 25,036,181 ops/sec ±0.59% (92 runs sampled)
-03-uuid-random-binary x 15,019,871 ops/sec ±0.69% (89 runs sampled)
-07-uuid-random x 10,446,971 ops/sec ±0.64% (93 runs sampled)
-05-easen x 10,372,691 ops/sec ±0.73% (90 runs sampled)
-04-moleculer x 4,999,143 ops/sec ±0.91% (90 runs sampled)
-06-easen-unsafe x 4,998,117 ops/sec ±0.67% (92 runs sampled)
-09-node-uuid x 1,152,845 ops/sec ±0.61% (91 runs sampled)
-08-node-uuid-binary x 1,071,768 ops/sec ±2.32% (79 runs sampled)
-10-fast-uuid x 807,137 ops/sec ±0.82% (87 runs sampled)
+02-easen-binary x 38,770,508 ops/sec ±0.90% (88 runs sampled)
+01-easen-unsafe-binary x 26,632,001 ops/sec ±0.75% (91 runs sampled)
+05-easen x 20,020,123 ops/sec ±0.58% (92 runs sampled)
+03-uuid-random-binary x 16,171,541 ops/sec ±0.80% (90 runs sampled)
+06-easen-unsafe x 13,117,311 ops/sec ±0.65% (92 runs sampled)
+07-uuid-random x 10,966,767 ops/sec ±0.82% (93 runs sampled)
+04-moleculer x 5,894,184 ops/sec ±0.60% (93 runs sampled)
+11-crypto-random-uuid x 3,901,747 ops/sec ±1.00% (91 runs sampled)
+09-node-uuid x 1,157,118 ops/sec ±2.35% (93 runs sampled)
+08-node-uuid-binary x 878,645 ops/sec ±3.40% (77 runs sampled)
+10-fast-uuid x 843,504 ops/sec ±0.55% (96 runs sampled)
+12-crypto-random-uuid-no-cache x 349,835 ops/sec ±6.38% (77 runs sampled)
 ```
