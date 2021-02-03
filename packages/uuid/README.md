@@ -83,8 +83,6 @@ Tested on Node.js v11.9.0.
 
 * `@easen-tools/uuid` binary implementation, even cryptographically secure, is much faster than anything else
 * `@easen-tools/uuid` string implementation, even cryptographically secure, is fastest
-  * `uuid-random` tends to be faster for string results
-    * it's using buffers under the hood, but in cost of memory issues (slicing buffers instead of creating new)
   * it's far faster than `uuid`
   * cryptographically secure algorithm has similar performance as not secure
   * Implementation [embedded in Moleculer](https://github.com/moleculerjs/moleculer/blob/aab42e5accd3dded86e1dc341ab819f952fec378/src/utils.js#L37) is similar to unsafe string representation,
@@ -98,7 +96,7 @@ Tested on Node.js v11.9.0.
 | **@easen-tools/uuid**                                    | binary         | ✖      | 25,036,181 ops/sec *±0.59%* |
 | [uuid-random](https://www.npmjs.com/package/uuid-random) | binary         | ✔      | 15,019,871 ops/sec *±0.69%* |
 | [uuid-random](https://www.npmjs.com/package/uuid-random) | string         | ✔      | 10,446,971 ops/sec *±0.64%* |
-| **@easen-tools/uuid**                                    | string         | ✔      | 5,606,790 ops/sec *±0.79%*  |
+| **@easen-tools/uuid**                                    | string         | ✔      | 10,372,691 ops/sec *±0.73%* |
 | [Moleculer (embedded)](https://github.com/moleculerjs/moleculer/blob/aab42e5accd3dded86e1dc341ab819f952fec378/src/utils.js#L37) | string         | ✖      | 4,999,143 ops/sec *±0.91%* |
 | **@easen-tools/uuid**                                    | string         | ✖      | 4,998,117 ops/sec *±0.67%*  |
 | ['uuid' module](https://www.npmjs.com/package/uuid)      | string         | ✔      | 1,152,845 ops/sec *±0.61%*  |
@@ -114,7 +112,7 @@ Raw results from [benchmark](benchmark), I have only sorted them from fastest to
 01-easen-unsafe-binary x 25,036,181 ops/sec ±0.59% (92 runs sampled)
 03-uuid-random-binary x 15,019,871 ops/sec ±0.69% (89 runs sampled)
 07-uuid-random x 10,446,971 ops/sec ±0.64% (93 runs sampled)
-05-easen x 5,606,790 ops/sec ±0.79% (91 runs sampled)
+05-easen x 10,372,691 ops/sec ±0.73% (90 runs sampled)
 04-moleculer x 4,999,143 ops/sec ±0.91% (90 runs sampled)
 06-easen-unsafe x 4,998,117 ops/sec ±0.67% (92 runs sampled)
 09-node-uuid x 1,152,845 ops/sec ±0.61% (91 runs sampled)
